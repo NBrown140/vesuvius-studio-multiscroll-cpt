@@ -1,8 +1,10 @@
 """Offline tiled inference on a uint8 [16,H,W] array in verified model depth order.
 
 Default: 128 px windows on a 96 px grid, central 96 px written without overlap (Studio's published tiling).
---stride 64 --blend hann: windows every 64 px, each central 96 px weighted by a pixel-centred 2-D Hann window and the
-overlaps averaged by weight (the tiling used for the PHerc0211 submission images; smooth, no tile seams).
+--stride 48 --blend hann: windows every 48 px, each central 96 px weighted by a pixel-centred 2-D Hann window and the
+overlaps averaged by weight. At stride 48 every pixel lies in two windows per axis and the weights sum to one, so no
+tile pattern is left. Stride 64 (the tiling of the PHerc0211 submission images) hands over between windows within a
+32 px band and leaves faint squares in weak-ink areas.
 Pixels with no CT data (all 16 input planes 0, i.e. outside the rendered surface) are written as 0, and windows whose
 central 96 px has no CT data are not run at all (their pixels are 0 anyway; --keep-empty runs them).
 """
@@ -88,7 +90,7 @@ def main():
     parser.add_argument("--device", default="cuda", choices=["cuda", "cpu"])
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--amp", default="bf16", choices=["bf16", "fp32"])
-    parser.add_argument("--stride", type=int, default=96, help="Window step in px; 96 = no overlap (default), 64 = the submission tiling")
+    parser.add_argument("--stride", type=int, default=96, help="Window step in px; 96 = no overlap (default); with --blend hann, 48 = no tile pattern, 64 = the submission tiling")
     parser.add_argument("--blend", default="none", choices=["none", "hann"], help="hann: Hann-weighted average of overlapping windows")
     parser.add_argument("--keep-empty", action="store_true", help="Also run windows with no CT data (slower)")
     args = parser.parse_args()
